@@ -1,0 +1,26 @@
+# 1. Ignore everything in the project root and all subdirectories
+/*
+
+# 2. Allow the .gitignore file itself
+!.gitignore
+
+# 3. Allow all Python source files
+!*.py
+
+# 4. Allow project metadata and setup files
+!pyproject.toml
+!requirements.txt
+!README.md
+!LICENSE.md
+
+# 5. Allow directories so Git can traverse into subfolders
+!*/
+
+# 6. Re-ignore standard Python build artifacts and cache folders
+__pycache__/
+*.pyc
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
