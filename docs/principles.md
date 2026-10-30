@@ -9,7 +9,7 @@ A dataset is its `data/` folder, one YAML file to a record. `dist/` is output: i
 <sub>data/card/standard/01-base/01-base/040-raticate.yml</sub>
 
 ```yaml
-oracle: raticate-base-040
+blueprint: raticate-base-040
 
 index: '040'
 
@@ -22,13 +22,13 @@ set: Base
 
 ## Ids come from the record
 
-No file contains its own id. A collection's and a set's come from its name. A card's comes from its set and its printed index, an oracle's from its name and the printing it first appeared in, and a deck's from its set and its name, all kebab-cased at build time. Base and 040 make `base-040`.
+No file contains its own id. A collection's and a set's come from its name. A card's comes from its set and its printed index, an blueprint's from its name and the printing it first appeared in, and a deck's from its set and its name, all kebab-cased at build time. Base and 040 make `base-040`.
 
 Because the id is derived, a filename is free to be whatever helps an editor find the file, and renaming one changes nothing. Two records that derive the same id fail the build, and the error names both files.
 
 ## References are names
 
-A card says `set: Base`, not an id, and the build turns the name into one. An oracle is the one exception, written as its id, because thousands of cards share a name and the name alone can't pick out one oracle.
+A card says `set: Base`, not an id, and the build turns the name into one. An blueprint is the one exception, written as its id, because thousands of cards share a name and the name alone can't pick out one blueprint.
 
 Checking against the schema only ever sees one file, so on its own it can't tell whether that set exists. The reference check that follows looks across the whole dataset, and reports every reference that doesn't resolve.
 
@@ -40,9 +40,9 @@ Hand-written files stay outside that loop on purpose. Formats and decks carry co
 
 ## A printing is not its mechanics
 
-An oracle holds what a card does, meaning its rules and its type, and every printing of that card shares it. A card holds one printing: its set, its index, its artist, its rarity. That split decides where a field belongs.
+An blueprint holds what a card does, meaning its rules and its type, and every printing of that card shares it. A card holds one printing: its set, its index, its artist, its rarity. That split decides where a field belongs.
 
-A regulation mark is printed on a card, so it's written on the card. The pool of every mark an oracle has been printed under is gathered at build time rather than stored, and legality checks the pool, because a player may use any printing whose mark is legal. Stored on the oracle instead, a modern mark would spread back onto a card printed years before the mark existed.
+A regulation mark is printed on a card, so it's written on the card. The pool of every mark an blueprint has been printed under is gathered at build time rather than stored, and legality checks the pool, because a player may use any printing whose mark is legal. Stored on the blueprint instead, a modern mark would spread back onto a card printed years before the mark existed.
 
 ## No game in the code
 

@@ -11,11 +11,11 @@ your-game/
 ├── data/
 │   ├── collection/
 │   ├── set/
-│   ├── oracle/
+│   ├── blueprint/
 │   ├── card/
 │   ├── format/
 │   └── deck/
-├── schema/            card, oracle, set, collection, format, deck
+├── schema/            card, blueprint, set, collection, format, deck
 ├── dataset.yml
 ├── pyproject.toml
 └── .github/workflows/validate.yml
@@ -23,7 +23,7 @@ your-game/
 
 ## Write the data
 
-Write collections first, then sets, oracles and cards, and formats and decks last, since they refer to everything else. Each record is one file, and each reference is by name. Folders and filenames are for your own navigation; ids come from the records themselves.
+Write collections first, then sets, blueprints and cards, and formats and decks last, since they refer to everything else. Each record is one file, and each reference is by name. Folders and filenames are for your own navigation; ids come from the records themselves.
 
 <sub>data/set/standard/01-base/01-base.yml</sub>
 

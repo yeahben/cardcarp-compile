@@ -78,7 +78,7 @@ collection_types:
 
 ## The schema
 
-Everything else a game decides lives in `schema/`: one cerberus schema for each kind of record, namely card, oracle, set, collection, format and deck. It says which fields exist, which are required and what each one holds, and `cardcarp-compile` checks every file against it.
+Everything else a game decides lives in `schema/`: one cerberus schema for each kind of record, namely card, blueprint, set, collection, format and deck. It says which fields exist, which are required and what each one holds, and `cardcarp-compile` checks every file against it.
 
 The schema's key order is also the order `cardcarp-split` writes fields in, so the schema and the files it checks always read the same way.
 

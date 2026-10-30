@@ -71,7 +71,7 @@ Without a ref, the dependency follows Compile's default branch, and every run pi
 
 ```toml
 dependencies = [
-    "cardcarp-compile-core @ git+https://github.com/yeahben/cardcarp-compile.git@v0.1.0",
+    "cardcarp-compile-core @ git+https://github.com/yeahben/cardcarp-compile.git@v0.2.0",
 ]
 ```
 

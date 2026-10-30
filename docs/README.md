@@ -6,7 +6,7 @@ The build every card dataset runs: YAML checked against its schema, references r
 pip install "cardcarp-compile-core @ git+https://github.com/yeahben/cardcarp-compile.git"
 ```
 
-Compile is the build every cardcarp dataset runs. A game's cards, sets, oracles and decks are written as YAML, one record to a file. Compile checks every file against the game's schema, checks that every reference between records resolves, and writes the JSON that the [CardCarp apps](https://github.com/yeahben/cardcarp-web) and [the simulator](https://github.com/yeahben/cardcarp-web/blob/main/packages/simulator/docs/README.md) load.
+Compile is the build every cardcarp dataset runs. A game's cards, sets, blueprints and decks are written as YAML, one record to a file. Compile checks every file against the game's schema, checks that every reference between records resolves, and writes the JSON that the [CardCarp apps](https://github.com/yeahben/cardcarp-web) and [the simulator](https://github.com/yeahben/cardcarp-web/blob/main/packages/simulator/docs/README.md) load.
 
 ```sh
 pip install .          # once, in a game's dataset repo

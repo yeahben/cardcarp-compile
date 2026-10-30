@@ -28,7 +28,7 @@ The archive: every card and every deck the game has, each keyed by its id. `@car
       "name": "Pikachu",
       "set_id": "base",
       "card_index": "058",
-      "oracle_id": "pikachu-base-058",
+      "blueprint_id": "pikachu-base-058",
       "category": ["Pokémon"],
       "type": ["Lightning"],
       "hp": 40,
@@ -54,7 +54,7 @@ The archive: every card and every deck the game has, each keyed by its id. `@car
 }
 ```
 
-A card carries its whole joined record: the printing, its oracle's mechanics, its set and collection, and its legality in each format. A deck's `list` is its cards by group, as card id and quantity.
+A card carries its whole joined record: the printing, its blueprint's mechanics, its set and collection, and its legality in each format. A deck's `list` is its cards by group, as card id and quantity.
 
 ## sets.json
 

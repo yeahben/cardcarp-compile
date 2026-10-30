@@ -129,12 +129,12 @@ def compile_base_jsons():
     os.makedirs('dist', exist_ok=True)
 
     # Each id is composed from the record's own properties, so the filename stays free to be what is easiest for an editor to find.
-    # Oracle names repeat in the hundreds, so the id pairs name with the earliest-printing (held in 'origin')
-    def oracle_id(record):
+    # Blueprint names repeat in the hundreds, so the id pairs name with the earliest-printing (held in 'origin')
+    def blueprint_id(record):
         return to_kebab_case(f"{record.get('name')}-{record.get('origin')}")
 
     mappings = [
-        ('data/oracle', 'dist/oracle.json', 'oracle', oracle_id, None),
+        ('data/blueprint', 'dist/blueprint.json', 'blueprint', blueprint_id, None),
         ('data/set', 'dist/set.json', 'set', by_name, {'collection': 'collection_id'}),
         ('data/collection', 'dist/collection.json', 'collection', by_name, None),
     ]
@@ -166,7 +166,7 @@ def compile_base_jsons():
 
     cards = load_entities(
         'data/card', 'card', card_id,
-        {'set': 'set_id', 'oracle': 'oracle_id'}
+        {'set': 'set_id', 'blueprint': 'blueprint_id'}
     )
 
     for record in cards.values():
@@ -187,7 +187,7 @@ def compile_base_jsons():
     print(f"  Built dist/deck.json ({len(decks)} decks)")
 
 
-def check_references(cards, oracles, sets, collections, formats, decks):
+def check_references(cards, blueprints, sets, collections, formats, decks):
     # Schema validation only ever sees one file at a time, so a reference to a record that does not exist will pass as a false-positive, this is what catches that.
     problems = []
 
@@ -196,12 +196,12 @@ def check_references(cards, oracles, sets, collections, formats, decks):
             problems.append(f"{source}: {field} '{value}' is not a known {label}")
 
     for card_id, record in cards.items():
-        check(f"card {card_id}", 'oracle', record.get('oracle_id'), oracles, 'oracle')
+        check(f"card {card_id}", 'blueprint', record.get('blueprint_id'), blueprints, 'blueprint')
         check(f"card {card_id}", 'set', record.get('set_id'), sets, 'set')
 
-    # An oracle's origin is the card id of its earliest printing, and split places the oracle's file by that card.
-    for oracle_id, record in oracles.items():
-        check(f"oracle {oracle_id}", 'origin', record.get('origin'), cards, 'card')
+    # An blueprint's origin is the card id of its earliest printing, and split places the blueprint's file by that card.
+    for blueprint_id, record in blueprints.items():
+        check(f"blueprint {blueprint_id}", 'origin', record.get('origin'), cards, 'card')
 
     for set_id, record in sets.items():
         check(f"set {set_id}", 'collection', record.get('collection_id'), collections, 'collection')
@@ -215,7 +215,7 @@ def check_references(cards, oracles, sets, collections, formats, decks):
                     check(f"deck {deck_id} list.{section}", 'card', card_ref, cards, 'card')
 
     vocabulary = set()
-    for record in oracles.values():
+    for record in blueprints.values():
         vocabulary.update(record.get('category') or [])
         vocabulary.update(record.get('trait') or [])
 
@@ -225,16 +225,16 @@ def check_references(cards, oracles, sets, collections, formats, decks):
             if value != '*':
                 check(f"format {format_id}", 'set_allow', value, sets, 'set')
 
-        for field in ('oracle_ban', 'oracle_restrict'):
+        for field in ('blueprint_ban', 'blueprint_restrict'):
             entries = record.get(field) or []
-            # oracle_restrict maps an id to its limit; oracle_ban is a plain list
+            # blueprint_restrict maps an id to its limit; blueprint_ban is a plain list
             for value in (entries.keys() if isinstance(entries, dict) else entries):
-                check(f"format {format_id}", field, value, oracles, 'oracle')
+                check(f"format {format_id}", field, value, blueprints, 'blueprint')
 
-        # oracle_exception is keyed by a category or trait value rather than an id.
-        # A key that matches nothing would silently never apply, so it is checked here against the vocabulary the oracles actually use.
-        for value in (record.get('oracle_exception') or {}):
-            check(f"format {format_id}", 'oracle_exception', value, vocabulary, 'category or trait')
+        # blueprint_exception is keyed by a category or trait value rather than an id.
+        # A key that matches nothing would silently never apply, so it is checked here against the vocabulary the blueprints actually use.
+        for value in (record.get('blueprint_exception') or {}):
+            check(f"format {format_id}", 'blueprint_exception', value, vocabulary, 'category or trait')
 
     if problems:
         print(f"Error: {len(problems)} reference(s) do not resolve:")
@@ -248,7 +248,7 @@ def check_references(cards, oracles, sets, collections, formats, decks):
 
 
 def exception_limit(table, categories, traits):
-    # oracle_exception is flat: a key is matched against an oracle's categories and its traits alike. 
+    # blueprint_exception is flat: a key is matched against an blueprint's categories and its traits alike. 
     # Nothing here keeps the two vocabularies apart, so a trait must never reuse a category's name.
     # Example: in Pokémon a basic Energy is traited 'Basic Energy' rather than 'Basic'.
     if not table:
@@ -265,32 +265,32 @@ def compile_joined_database():
     print("Step 2: Joining data and outputing database...")
 
     with open('dist/card.json', 'r') as f: cards = json.load(f)
-    with open('dist/oracle.json', 'r') as f: oracles = json.load(f)
+    with open('dist/blueprint.json', 'r') as f: blueprints = json.load(f)
     with open('dist/set.json', 'r') as f: sets = json.load(f)
     with open('dist/collection.json', 'r') as f: collections = json.load(f)
     with open('dist/format.json', 'r') as f: formats = json.load(f)
     with open('dist/deck.json', 'r') as f: decks = json.load(f)
 
-    check_references(cards, oracles, sets, collections, formats, decks)
+    check_references(cards, blueprints, sets, collections, formats, decks)
 
     # A regulation mark is printed on a card, so it is authored there. 
-    # The pool of every mark an oracle has appeared under is gathered from its printings here rather than stored.
+    # The pool of every mark an blueprint has appeared under is gathered from its printings here rather than stored.
     # This is what keeps a 2007 printing from inheriting a mark that did not exist until 2020.
     regulation_pool = {}
     for record in cards.values():
         mark = record.get("regulation")
         if not mark:
             continue
-        marks = regulation_pool.setdefault(record.get("oracle_id"), [])
+        marks = regulation_pool.setdefault(record.get("blueprint_id"), [])
         if mark not in marks:
             marks.append(mark)
 
     card_complete_dict = {}
 
     for card_id, record in cards.items():
-        oracle_id = record.get("oracle_id")
-        if oracle_id in oracles:
-            for k, v in oracles[oracle_id].items():
+        blueprint_id = record.get("blueprint_id")
+        if blueprint_id in blueprints:
+            for k, v in blueprints[blueprint_id].items():
                 if k not in record: record[k] = v
 
         sid = record.get("set_id")
@@ -332,21 +332,21 @@ def compile_joined_database():
         record["ban"] = []
         record["restrict"] = []
         c_set_id = record.get("set_id")
-        c_oid = record.get("oracle_id")
+        c_oid = record.get("blueprint_id")
         c_cat = record.get("category") or []
         c_trait = record.get("trait") or []
 
         # A player may use any printing whose mark is legal
-        # Legality tests the oracle's whole pool, not just the mark on the card in hand.
+        # Legality tests the blueprint's whole pool, not just the mark on the card in hand.
         # The card keeps its own printed mark in 'regulation'.
-        record["oracle_regulation"] = sorted(regulation_pool.get(c_oid, []))
-        c_reg = record["oracle_regulation"]
+        record["blueprint_regulation"] = sorted(regulation_pool.get(c_oid, []))
+        c_reg = record["blueprint_regulation"]
 
         for f_name, f_rules in formats.items():
             legal, limit = False, 0
             s_allow = f_rules.get("set_allow") or []
             r_allow = f_rules.get("regulation_allow") or []
-            bans = f_rules.get("oracle_ban") or []
+            bans = f_rules.get("blueprint_ban") or []
 
             if c_oid in bans:
                 record["ban"].append(f_name)
@@ -358,15 +358,15 @@ def compile_joined_database():
             by_regulation = "*" in r_allow or any(mark in r_allow for mark in c_reg)
 
             if (by_set or by_regulation) and c_oid not in bans:
-                restricts = f_rules.get("oracle_restrict")
-                exception = exception_limit(f_rules.get("oracle_exception"), c_cat, c_trait)
+                restricts = f_rules.get("blueprint_restrict")
+                exception = exception_limit(f_rules.get("blueprint_exception"), c_cat, c_trait)
                 if restricts and c_oid in restricts:
                     legal, limit = True, restricts[c_oid]
                     record["restrict"].append(f_name)
                 elif exception is not None:
                     legal, limit = True, exception
                 else:
-                    legal, limit = True, f_rules.get("oracle_limit", 4)
+                    legal, limit = True, f_rules.get("blueprint_limit", 4)
                 record["legal"].append(f_name)
 
             record["legality"][f_name] = {"legal": legal, "limit": limit}

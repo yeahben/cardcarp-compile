@@ -17,7 +17,7 @@ cardcarp-properties   # dist/ + dataset.yml      ->  dist/properties.json
 
 The build, and the step CI runs. It checks every file under `data/` against `schema/` and stops at the first that fails, naming the file and the field. A key repeated inside one file is an error too, because YAML would otherwise keep one value and silently lose the other.
 
-It then derives every record's id and refuses two records that claim the same one. Next it checks that every reference resolves: a card's set and oracle, a set's collection, a deck's set and every card in its list, and a format's sets, bans and exceptions. It reports all the failures together rather than one at a time. Finally it joins each card with its oracle, set and collection, works out its legality in every format, and writes `dist/database.json` alongside a file for each kind of record.
+It then derives every record's id and refuses two records that claim the same one. Next it checks that every reference resolves: a card's set and blueprint, a set's collection, a deck's set and every card in its list, and a format's sets, bans and exceptions. It reports all the failures together rather than one at a time. Finally it joins each card with its blueprint, set and collection, works out its legality in every format, and writes `dist/database.json` alongside a file for each kind of record.
 
 ## cardcarp-sets
 
@@ -33,7 +33,7 @@ Writes `dist/properties.json`: every distinct value of the card and deck fields 
 
 ## cardcarp-split
 
-The inverse of `cardcarp-compile`. It rewrites `data/card`, `data/oracle`, `data/set` and `data/collection` from `dist/`, in schema field order and in the folder layout the records imply. It's for a structural change across thousands of files, and for tidying formatting after one.
+The inverse of `cardcarp-compile`. It rewrites `data/card`, `data/blueprint`, `data/set` and `data/collection` from `dist/`, in schema field order and in the folder layout the records imply. It's for a structural change across thousands of files, and for tidying formatting after one.
 
 It rewrites every file it owns, so run it on a clean working tree and read the diff before committing. It never touches `data/format` or `data/deck`. Both are written by hand, with comments and long text that a round trip through JSON would flatten.
 
