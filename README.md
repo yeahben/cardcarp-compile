@@ -12,6 +12,8 @@ resolved. Any trading card game can use it.
 > This repo is the tooling only. It contains no card data.<br>
 > Each game's data lives in its own repo, which installs this pipeline as a dependency and runs it against its own `data/` and `schema/`.
 
+Full documentation (install, configuration, commands, the manifest contract) is in [`docs/`](docs/README.md).
+
 <br>
 
 ## 🧭 Why a Shared Pipeline
@@ -52,7 +54,7 @@ then its collection, and gets a `legality` entry for every format.
 You need Python 3.10 or newer. Each game repo lists this pipeline as a dependency, so installing the game repo installs the pipeline too:
 
 ```bash
-git clone https://github.com/cardcarp/ptcg.git
+git clone https://github.com/yeahben/cardcarp-ptcg.git
 cd ptcg
 pip install .
 cardcarp-compile
@@ -208,8 +210,8 @@ Each card ends up with `legality` (a limit for each format) plus quick lists: `l
 
 | Game | Repo |
 | --- | --- |
-| Pokémon TCG | [cardcarp/ptcg](https://github.com/cardcarp/ptcg) |
-| World of Warcraft TCG | [cardcarp/wow](https://github.com/cardcarp/wow) |
+| Pokémon TCG | [yeahben/cardcarp-ptcg](https://github.com/yeahben/cardcarp-ptcg) |
+| World of Warcraft TCG | [yeahben/cardcarp-wow](https://github.com/yeahben/cardcarp-wow) |
 
 Building a dataset for another game? Come say hello on Discord.
 
