@@ -1,0 +1,250 @@
+# CardCarp Compile 🧵
+
+Shared build pipeline to create tabletop-card-game datasets.
+
+<br>
+
+> [!NOTE]
+> This repo is tooling only. It contains no card data.<br>
+> Each game's data lives in its own repo, which installs this pipeline as a dependency.
+
+Full documentation (install, configuration, commands, the manifest contract) is in [`docs/`](docs/README.md).
+
+<br>
+
+## 🧭 Why a Shared Pipeline
+
+Most tabletop-card-games have similar structure, just different terminology. The pipeline handles that structure once. Each game only has to supply
+its own vocabulary and validation rules.
+
+That means:
+
+- **One data model.** A card from any dataset has the same shape, so one app can read all of them.<br>
+- **One set of guarantees.** Every dataset gets the same validation, id rules and reference checks.<br>
+
+<br>
+
+## 🗂️ The Data Model
+
+The pipeline expects seven kinds of records. Each one is a separate YAML file.
+
+| Record | Holds | Example |
+| --- | --- | --- |
+| **card** | One physical printing: artist, rarity, collector number | *Pikachu, Base Set #58* |
+| **core** | Rules that stay the same across every reprint | *Pikachu's HP, attacks, weakness* |
+| **set** | A group of cards sharing a set mark and number sequence | *Base Set* |
+| **collection** | A larger group of sets, such as an era or block | *Base era* |
+| **format** | Legality rules: allowed sets, bans, restrictions, copy limits | *Standard* |
+| **deck** | A pre-built product decklist, pointing to specific printings | *Theme Deck: Overgrowth* |
+| **pack** | A sealed pack drawn at random by rule: the sets it draws from, and a slot per kind of card | *Base Set booster: 7 commons, 3 uncommons, 1 rare* |
+
+<br>
+
+## 🚀 Quick Start
+
+You need Python 3.10 or newer. 
+
+Each game repo lists this pipeline as a dependency, so installing the game repo installs the pipeline too:
+
+```bash
+git clone https://github.com/yeahben/cardcarp-tarot.git
+cd tarot
+pip install .
+cardcarp-compile
+```
+
+Every command reads and writes relative to **the directory you run it from**. Always run it from a game repo's root.
+
+<br>
+
+## 🐍 Commands
+
+### Primary
+
+This is the main editing loop: edit YAML, compile, and optionally convert compiled back to YAML.
+
+- `cardcarp-compile` checks every YAML file against `schema/` and fails on duplicate keys or ids. It then confirms that every cross-reference points to a real record and writes the joined JSON to `dist/`. **This is the build.** It is also what CI runs on every pull request.<br>
+
+- `cardcarp-split` regenerates `data/card`, `data/blueprint`, `data/set` and `data/collection` from `dist/`. It is the exact reverse of compile: on an unchanged build, the output matches the source byte for byte. Use it for bulk restructuring or to normalize formatting. `data/format`, `data/deck` and `data/pack` are written by hand and are never touched.
+
+> [!WARNING]
+> `cardcarp-split` deletes the four folders it manages before rewriting them. Commit your changes or stash them first.
+
+<br>
+
+### Secondary
+
+These commands are optional and outside the main loop. Each one reads `dist/` and adds one more file to it. None of them touch `data/`. Run `cardcarp-compile` first.
+
+- `cardcarp-sets` writes `dist/sets.json`: a tree of collection type → collection → set, with card totals at every level.<br>
+
+- `cardcarp-manifest` writes `dist/manifest.json`: every card and deck, keyed by id, with `id` and a `dir` path included in each record. It's written without whitespace because apps download it.<br>
+
+- `cardcarp-properties` writes `dist/properties.json`: every distinct value of the fields a game marks as filterable. Use it to build dropdown options.<br>
+
+- `cardcarp-image FOLDER` converts a folder of PNG/JPEG card scans to AVIF, each with a 480px `-thumb` cut for the deckbox grid, both encoded to a byte cap. It reads the folder you name, not `dist/`, and needs `avifenc` and Pillow (`pip install ".[image]"`).
+
+<br>
+
+### Output
+
+| File | Contents |
+| --- | --- |
+| `card.json` `blueprint.json` `set.json` `collection.json` `format.json` `deck.json` `pack.json` | Each record type validated on its own, keyed by id, with references resolved |
+| `database.json` | **The full dataset.** Every card, joined with its blueprint, set and collection, plus legality |
+| `sets.json` | The set tree, in order, with totals *(from `cardcarp-sets`)* |
+| `manifest.json` | Cards, decks and packs in one compact file *(from `cardcarp-manifest`)* |
+| `properties.json` | Values for filters *(from `cardcarp-properties`)* |
+
+<br>
+
+## 🧩 Making a Game Dataset
+
+A game repo contains data and schemas, with no Python of its own:
+
+```
+your-game/
+├── pyproject.toml        depends on cardcarp-compile
+├── schema/
+│   ├── dataset.yml       the game's vocabulary
+│   ├── card.yml          one validation schema per record type
+│   ├── core.yml
+│   ├── set.yml
+│   ├── collection.yml
+│   ├── format.yml
+│   ├── deck.yml
+│   └── pack.yml
+└── data/
+    ├── card/  core/  set/  collection/  format/  deck/  pack/
+```
+
+Copy `pyproject.toml` and `.github/workflows/validate.yml` from an existing game to get the dependency and the CI check.
+
+<br>
+
+### `schema/dataset.yml`
+
+This file is the only place a game declares what makes it different from other games:
+
+```yaml
+card_properties:     # card fields to collect for filters
+  - category
+  - rarity
+
+deck_properties:     # deck fields to collect for filters
+  - format
+
+collection_types:    # display order; the first entry is the game's main type
+  - Standard
+  - Extra
+```
+
+<br>
+
+### Schemas
+
+Schemas use [Cerberus](https://docs.python-cerberus.org/) rules written in YAML. YAML can't store Python functions, so `coerce` accepts the names `int`, `float`, `str` or `bool`.
+
+The key order in a schema also sets the field order when `cardcarp-split` writes YAML. Put fields in the order an editor would expect to read them.
+
+Beyond the fields a game adds itself, the build reads these:
+
+| Record | Fields the pipeline uses |
+| --- | --- |
+| card | `set`, `index`, `blueprint`, `regulation` *(optional)* |
+| core | `name`, `origin`, `category`, `trait` |
+| set | `name`, `collection`, `index`, `type`, `date`, `publisher` |
+| collection | `name`, `index`, `type` |
+| format | `set_allow`, `regulation_allow`, `blueprint_ban`, `blueprint_restrict`, `blueprint_exception`, `blueprint_limit` |
+| deck | `name`, `group`, `highlight`, `list` |
+| pack | `name`, `group`, `highlight`, `set`, `slot`, `unique` *(optional)* |
+
+<br>
+
+## 🔑 How IDs Work
+
+IDs are never written by hand. Records refer to each other by readable names
+(`set: Base`, `collection: Neo`), and the build turns every name into a kebab-case id:
+
+| Record | Id built from | Example |
+| --- | --- | --- |
+| card | set + printed index | `base-058` |
+| core | name + `core` (the card id of its first printing) | `pikachu-base-058` |
+| set, collection | name | `base` |
+| deck | group + name | `base-overgrowth` |
+| pack | group + name | `base-booster-pack` |
+| format | file name | `standard` |
+
+When turning a name into an id, the build removes apostrophes (straight and curly), strips accents (`Pokémon` → `pokemon`)
+and never splits camelCase (`BREAKpoint` stays one word). Two records that end up with the
+same id stop the build, and the error names both files.
+
+Folder paths exist to make files easy to find, and **are never part of an id**. Prefixes
+such as `01-base/` keep folders in release order and can be renamed freely. A prefix comes
+from the record's `index`: whole numbers are padded to two digits, other values such as `01a` are
+used as written, and a record with no `index` gets a folder with no prefix.
+
+<br>
+
+## ⚖️ How Legality Works
+
+Each card gets a result for every format in `data/format`:
+
+- **Admission.** A format can admit a card by set (`set_allow`), by regulation mark (`regulation_allow`), or both. The two checks are independent, so a card passes if either one lets it in. `'*'` means every set.<br>
+- **Pooled marks.** A regulation mark is recorded on the card where it's printed. For legality, the build combines all the marks from an blueprint's printings, so any printing counts if the card has ever carried an allowed mark.<br>
+- **Limits.** A ban removes the card from the format. Otherwise the copy limit comes from the first rule that applies: `blueprint_restrict` for that card, then `blueprint_exception` for its category or trait, then `blueprint_limit`, which defaults to 4.
+
+Each card ends up with `legality` (a limit for each format) plus quick lists: `legal`, `ban` and `restrict`.
+
+<br>
+
+## 📦 How Packs Work
+
+A pack is a rule rather than a list. It names the sets it draws from and a slot for each kind of card it holds; the cards themselves are picked at the table when the pack is opened, so one record covers every pack of that product.
+
+```yaml
+set:
+  - Base
+slot:
+  - count: 7
+    match:
+      - rarity: Common
+  - count: 3
+    match:
+      - rarity: Uncommon
+  - count: 1
+    match:
+      - weight: 2
+        rarity: Rare
+      - weight: 1
+        rarity: Rare Holo
+```
+
+Each `match` is a card field and the value it must carry, as a list where any of several will do. A field written empty (`rarity:`) asks for cards that carry no value at all, which is how basic Energy is picked out. `weight` sets the odds between the kinds a slot may hold, and a slot with no `match` draws any card from the pack's sets. The build checks every match against the joined cards of those sets, so a pack never promises a kind of card its pool does not hold. `unique: false` lets a pack hold the same printing twice.
+
+<br>
+
+## 🎴 Datasets
+
+| Game | Repo |
+| --- | --- |
+| Pokémon TCG | [yeahben/cardcarp-ptcg](https://github.com/yeahben/cardcarp-ptcg) |
+| World of Warcraft TCG | [yeahben/cardcarp-wow](https://github.com/yeahben/cardcarp-wow) |
+
+Building a dataset for another game? Come say hello on Discord.
+
+<br>
+
+## 🐝 Community
+
+- **[Join Discord](https://chat.yeahben.com):** discuss the pipeline, the data model, and new games.<br>
+- **[CardCarp](https://cardcarp.com):** the web app built on these datasets.<br>
+- **[Support the project](https://patronage.yeahben.com):** help keep the datasets maintained.
+
+<br>
+
+## 📜 License
+
+The pipeline code is released under [MIT No Attribution](LICENSE.md). Each game dataset has its own license and disclaimer. Check the dataset's repo before using its data.
+
+<sub>CardCarp is an independent, community-driven project. It is not affiliated with, endorsed by, or sponsored by any card game publisher or intellectual property owner.</sub>

@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cardcarp-compile-core"
+version = "0.4.0"
+description = "The shared build pipeline for the cardcarp card datasets."
+requires-python = ">=3.10"
+dependencies = [
+    "ruamel.yaml",
+    "cerberus",
+]
+
+# Thumbnails need Pillow; the scan-only path needs just avifenc on PATH.
+[project.optional-dependencies]
+image = ["pillow>=11.2"]
+
+[project.scripts]
+cardcarp-compile = "cardcarp_compile.compile:main"
+cardcarp-image = "cardcarp_compile.image:main"
+cardcarp-manifest = "cardcarp_compile.manifest:main"
+cardcarp-properties = "cardcarp_compile.properties:main"
+cardcarp-sets = "cardcarp_compile.sets:main"
+cardcarp-split = "cardcarp_compile.split:main"
+
+[tool.setuptools]
+packages = ["cardcarp_compile"]
